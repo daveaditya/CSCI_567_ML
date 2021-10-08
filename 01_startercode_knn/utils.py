@@ -6,7 +6,6 @@ from knn import KNN
 ############################################################################
 
 
-# TODO: implement F1 score
 def f1_score(real_labels, predicted_labels):
     """
     Information on F1 score - https://en.wikipedia.org/wiki/F1_score
@@ -137,7 +136,6 @@ class NormalizationScaler:
     def __init__(self):
         pass
 
-    # TODO: normalize data
     def __call__(self, features):
         """
         Normalize features for every sample
@@ -149,27 +147,61 @@ class NormalizationScaler:
         :param features: List[List[float]]
         :return: List[List[float]]
         """
-        raise NotImplementedError
+        # convert features to numpy array
+        arr_features = np.array(features)
+
+        # normalize function that will work on each data point
+        def scale(features):
+            """Scales features based on normalize logic
+
+            Args:
+                features ([List[float]]): Each feature from the features
+
+            Returns:
+                [List[float]]: Normalized feature
+            """
+            return features if np.all(features == 0) else features / np.sqrt(np.sum(np.power(features, 2)))
+
+        # scale features and return
+        return np.apply_along_axis(scale, 1, arr_features)
 
 
 class MinMaxScaler:
     def __init__(self):
         pass
 
-    # TODO: min-max normalize data
     def __call__(self, features):
         """
-                For each feature, normalize it linearly so that its value is between 0 and 1 across all samples.
-        For example, if the input features are [[2, -1], [-1, 5], [0, 0]],
-        the output should be [[1, 0], [0, 1], [0.333333, 0.16667]].
-                This is because: take the first feature for example, which has values 2, -1, and 0 across the three samples.
-                The minimum value of this feature is thus min=-1, while the maximum value is max=2.
-                So the new feature value for each sample can be computed by: new_value = (old_value - min)/(max-min),
-                leading to 1, 0, and 0.333333.
-                If max happens to be same as min, set all new values to be zero for this feature.
-                (For further reference, see https://en.wikipedia.org/wiki/Feature_scaling.)
+            For each feature, normalize it linearly so that its value is between 0 and 1 across all samples.
+            For example, if the input features are [[2, -1], [-1, 5], [0, 0]],
+            the output should be [[1, 0], [0, 1], [0.333333, 0.16667]].
+            This is because: take the first feature for example, which has values 2, -1, and 0 across the three samples.
+            The minimum value of this feature is thus min=-1, while the maximum value is max=2.
+            So the new feature value for each sample can be computed by: new_value = (old_value - min)/(max-min),
+            leading to 1, 0, and 0.333333.
+            If max happens to be same as min, set all new values to be zero for this feature.
+            (For further reference, see https://en.wikipedia.org/wiki/Feature_scaling.)
 
         :param features: List[List[float]]
         :return: List[List[float]]
         """
-        raise NotImplementedError
+        # convert features to numpy array
+        arr_features = np.array(features)
+
+        def scale(feature):
+            """Scales the feature based on min-max scaler logic
+
+            Args:
+                feature ([List[float]]): Single feature
+
+            Returns:
+                [List[float]]: Scaled feature
+            """
+            min = np.min(feature)
+            max = np.max(feature)
+            diff = max - min
+            scaler = lambda feature: 0 if min == max else (feature - min) / (diff)
+            return np.apply_along_axis(scaler, 0, feature)
+
+        # apply scaler to all features and return the final features
+        return np.apply_along_axis(scale, 1, arr_features)
