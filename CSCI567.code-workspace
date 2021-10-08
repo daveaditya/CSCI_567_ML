@@ -1,0 +1,64 @@
+{
+  "settings": {
+    "python.formatting.provider": "autopep8"
+  },
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "KNN",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/01_startercode_knn/test.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/01_startercode_knn"
+      },
+      {
+        "name": "Regression",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/02_startercode_regression/linear_regression_test.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/02_startercode_regression"
+      },
+      {
+        "name": "Linear Classifier",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/03_startercode_linear_classifier/classification.py",
+        "args": ["--type", "multiclass", "--output", "multiclass.out"],
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/03_startercode_linear_classifier"
+      },
+      {
+        "name": "Neural Nets",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/04_startercode_neural_nets/runme.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/04_startercode_neural_nets"
+      },
+      {
+        "name": "K Means",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/05_startercode_k_means/kmeansTest.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/05_startercode_k_means"
+      },
+      {
+        "name": "HMM",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/06_startercode_hmm/hmm_test_script.py",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/06_startercode_hmm"
+      }
+    ]
+  }
+}
