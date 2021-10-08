@@ -79,7 +79,6 @@ class HyperparameterTuner:
         self.best_scaler = None
         self.best_model = None
 
-    # TODO: find parameters with the best f1 score on validation dataset
     def tuning_without_scaling(self, distance_funcs, x_train, y_train, x_val, y_val):
         """
         In this part, you need to try different distance functions you implemented in part 1.1 and different values of k (among 1, 3, 5, ... , 29), and find the best model with the highest f1-score on the given validation set.
@@ -100,13 +99,49 @@ class HyperparameterTuner:
         For the same distance function, further break tie by prioritizing a smaller k.
         """
 
-        # You need to assign the final values to these variables
-        self.best_k = None
-        self.best_distance_function = None
-        self.best_model = None
-        raise NotImplementedError
+        # create an empty numpy array
+        results = np.empty((0, np.shape(x_train)[1]))
 
-    # TODO: find parameters with the best f1 score on validation dataset, with normalized data
+        for distance_func_name in distance_funcs.keys():
+
+            for k in range(1, 30):
+                # create an instance of knn
+                knn = KNN(k, distance_funcs[distance_func_name])
+
+                # train the knn classifier
+                knn.train(x_train, y_train)
+
+                # make predictions
+                predictions = knn.predict(x_val)
+
+                # get F1 score
+                f1_score = f1_score(y_val, predictions)
+
+                results = np.append(results, [[distance_func_name,
+                                    f1_score,
+                                    k,
+                                    knn]], axis=0)
+
+        # sort the result based on f1 score in non-increasing order
+        results = results[np.argsort(results[:1], kind='stable')[::-1]]
+
+        # sort the results based on distance_function
+        distance_funcs_priority = {'euclidean': 0,
+                                   'Minkowski': 1, 'cosine_dist': 2}
+        results = results[np.argsort(
+            np.array(distance_funcs_priority[df[0]] for df in results), kind='stable')]
+
+        # sort the result based on k neighbors in non-decreasing order
+        results = results[np.argsort(results[:3], kind='stable')]
+
+        # the first model is the one with best parameters
+        best = results[0]
+
+        # You need to assign the final values to these variables
+        self.best_k = best[2]
+        self.best_distance_function = best[0]
+        self.best_model = best[3]
+
     def tuning_with_scaling(self, distance_funcs, scaling_classes, x_train, y_train, x_val, y_val):
         """
         This part is the same as "tuning_without_scaling", except that you also need to try two different scalers implemented in Part 1.3. More specifically, before passing the training and validation data to KNN model, apply the scalers in scaling_classes to both of them. 
@@ -124,12 +159,70 @@ class HyperparameterTuner:
         First check scaler, prioritizing "min_max_scale" over "normalize" (which will also be the insertion order of scaling_classes). Then follow the same rule as in "tuning_without_scaling".
         """
 
+        # create an empty numpy array
+        results = np.empty((0, np.shape(x_train)[1]))
+
+        for scaling_class in scaling_classes:
+
+            # Select the scaler based on name
+            scaler = None
+            if scaling_class == 'min_max_scale':
+                scaler = MinMaxScaler()
+            else:
+                scaler = NormalizationScaler()
+
+            # scale the train and validation sets
+            scaled_x_train = scaler(x_train)
+            scaled_x_val = scaler(x_val)
+
+            for distance_func_name in distance_funcs.keys():
+
+                for k in range(1, 30):
+                    # create an instance of knn
+                    knn = KNN(k, distance_funcs[distance_func_name])
+
+                    # train the knn classifier
+                    knn.train(scaled_x_train, y_train)
+
+                    # make predictions
+                    predictions = knn.predict(scaled_x_val)
+
+                    # get F1 score
+                    f1_score = f1_score(y_val, predictions)
+
+                    results = np.append(results, [[
+                        scaling_class,
+                        distance_func_name,
+                        k,
+                        f1_score,
+                        knn
+                    ]], axis=0)
+
+        # sort the result based on f1 score in non-increasing order
+        results = results[np.argsort(results[:1], kind='stable')[::-1]]
+
+        # sort the results based on scaling class
+        scaling_class_priority = {'min_max_scale': 0, 'normalize': 1}
+        results = results[np.argsort(
+            np.array(scaling_class_priority[df[0]] for df in results), kind='stable')]
+
+        # sort the results based on distance_function
+        distance_funcs_priority = {'euclidean': 0,
+                                   'Minkowski': 1, 'cosine_dist': 2}
+        results = results[np.argsort(
+            np.array(distance_funcs_priority[df[0]] for df in results), kind='stable')]
+
+        # sort the result based on k neighbors in non-decreasing order
+        results = results[np.argsort(results[:3], kind='stable')]
+
+        # the first model is the one with best parameters
+        best = results[0]
+
         # You need to assign the final values to these variables
-        self.best_k = None
-        self.best_distance_function = None
-        self.best_scaler = None
-        self.best_model = None
-        raise NotImplementedError
+        self.best_k = best[2]
+        self.best_distance_function = best[1]
+        self.best_scaler = best[0]
+        self.best_model = best[4]
 
 
 class NormalizationScaler:
@@ -200,7 +293,9 @@ class MinMaxScaler:
             min = np.min(feature)
             max = np.max(feature)
             diff = max - min
-            scaler = lambda feature: 0 if min == max else (feature - min) / (diff)
+
+            def scaler(feature): return 0 if min == max else (
+                feature - min) / (diff)
             return np.apply_along_axis(scaler, 0, feature)
 
         # apply scaler to all features and return the final features
