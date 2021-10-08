@@ -2,8 +2,9 @@ import numpy as np
 from collections import Counter
 
 ############################################################################
-# DO NOT MODIFY CODES ABOVE 
+# DO NOT MODIFY CODES ABOVE
 ############################################################################
+
 
 class KNN:
     def __init__(self, k, distance_function):
@@ -14,7 +15,6 @@ class KNN:
         self.k = k
         self.distance_function = distance_function
 
-    # TODO: save features and lable to self
     def train(self, features, labels):
         """
         In this function, features is simply training data which is a 2D list with float values.
@@ -27,20 +27,26 @@ class KNN:
         :param features: List[List[float]]
         :param labels: List[int]
         """
-        raise NotImplementedError
+        self.features = np.array(features)
+        self.labels = np.array(labels)
 
-    # TODO: find KNN of one point
     def get_k_neighbors(self, point):
         """
         This function takes one single data point and finds the k nearest neighbours in the training set.
         It needs to return a list of labels of these k neighbours. When there is a tie in distance, 
-		prioritize examples with a smaller index.
+        prioritize examples with a smaller index.
         :param point: List[float]
         :return:  List[int]
         """
-        raise NotImplementedError
-		
-	# TODO: predict labels of a list of points
+        # Create a vector of length similar to the features vector
+        np_points = np.repeat(np.array([point]), np.size(self.features)[0])
+
+        # Calculate distance
+        distances = self.distance_function(self.features, np_points)
+
+        # Sort labels w.r.t distances and return the first k labels
+        return (self.labels[distances.argsort()[::-1]][:self.k]).list()
+
     def predict(self, features):
         """
         This function takes 2D list of test data points, similar to those from train function. Here, you need to process
@@ -51,7 +57,15 @@ class KNN:
         :param features: List[List[float]]
         :return: List[int]
         """
-        raise NotImplementedError	
+        # create a vectorized trainer
+        v_trainer = np.vectorize(self.get_k_neighbors)
+
+        # finds the majority label
+        v_majority_label = np.vectorize(lambda k_neighbors: Counter(
+            k_neighbors.tolist()).most_common()[0])
+
+        # creates a list predicted labels
+        return v_majority_label(v_trainer(features))
 
 
 if __name__ == '__main__':
