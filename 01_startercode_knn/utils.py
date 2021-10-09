@@ -44,7 +44,7 @@ class Distances:
         :param point2: List[float]
         :return: float
         """
-        return np.cbrt(np.sum(np.power(np.array(point1) - np.array(point2), 3), axis=1))
+        return np.cbrt(np.sum(np.power(np.absolute(np.array(point1) - np.array(point2)), 3), axis=1))
 
     @staticmethod
     def euclidean_distance(point1, point2):
@@ -64,13 +64,20 @@ class Distances:
        """
         arr_point1 = np.array(point1)
         arr_point2 = np.array(point2)
-        ed_point1 = np.sqrt(np.sum(np.power(arr_point1, 2)))
-        ed_point2 = np.sqrt(np.sum(np.power(arr_point2, 2)))
+        ed_point1 = np.sqrt(np.sum(np.power(arr_point1, 2), axis=1))
+        ed_point2 = np.sqrt(np.sum(np.power(arr_point2, 2), axis=1))
 
-        if ed_point1 == 0 or ed_point2 == 0:
-            return 1
-        else:
-            return 1 - ((np.einsum('ij,ij->i', arr_point1, arr_point2))/(ed_point1 * ed_point2))
+        # create an array to hold result
+        result = np.empty_like(ed_point1)
+
+        # for every point compute the cosine similarity distance
+        for idx in np.arange(ed_point1.shape[0]):
+            if ed_point1[idx] == 0 or ed_point2[idx] == 0:
+                result[idx] = 1
+            else:
+                result[idx] = 1 - (np.dot(arr_point1[idx], arr_point2[idx])/(ed_point1[idx] * ed_point2[idx]))
+
+        return result
 
 
 class HyperparameterTuner:
@@ -95,7 +102,7 @@ class HyperparameterTuner:
         NOTE: self.best_scaler will be None.
 
         NOTE: When there is a tie, choose the model based on the following priorities:
-        First check the distance function:  euclidean > Minkowski > cosine_dist 
+        First check the distance function:  euclidean > Minkowski > cosine_dist
                 (this will also be the insertion order in "distance_funcs", to make things easier).
         For the same distance function, further break tie by prioritizing a smaller k.
         """
@@ -105,7 +112,7 @@ class HyperparameterTuner:
 
         for distance_func_name in distance_funcs.keys():
 
-            for k in range(1, 30):
+            for k in range(1, 30, 2):
                 # create an instance of knn
                 knn = KNN(k, distance_funcs[distance_func_name])
 
@@ -119,24 +126,35 @@ class HyperparameterTuner:
                 score = f1_score(y_val, predictions)
 
                 results = np.append(results, [[distance_func_name,
-                                    score,
-                                    k,
-                                    knn]], axis=0)
+                                               score,
+                                               k,
+                                               knn]], axis=0)
 
         # sort the result based on f1 score in non-increasing order
-        results = results[np.argsort(results[:,1], kind='stable')[::-1]]
+        results = results[np.argsort(results[:, 1], kind='stable')[::-1]]
 
-        # sort the results based on distance_function
-        distance_funcs_priority = {'euclidean': 0,
-                                   'Minkowski': 1, 'cosine_dist': 2}
-        results = results[np.argsort(
-            np.array(distance_funcs_priority[df[0]] for df in results), kind='stable')]
+        top_f1_results = results[np.ravel(np.argwhere(
+            results[:, 1] >= results[:, 1].max()))]
 
-        # sort the result based on k neighbors in non-decreasing order
-        results = results[np.argsort(results[:,3], kind='stable')]
+        # if there is only one maximum f1 score that is the best
+        if top_f1_results.shape[0] == 1:
+            best = top_f1_results[0]
+        else:
+            # sort the results based on distance_function
+            distance_funcs_priority = {'euclidean': 0,
+                                       'minkowski': 1, 'cosine_dist': 2}
+            top_f1_with_sorted_distance = top_f1_results[np.argsort(np.array(
+                [distance_funcs_priority[df[0]] for df in top_f1_results]), kind='stable')]
 
-        # the first model is the one with best parameters
-        best = results[0]
+            # if there is only one distance function that maximizes f1 that is the best
+            top_wrt_distances = top_f1_with_sorted_distance[np.ravel(
+                np.argwhere(top_f1_with_sorted_distance[:, 0] == top_f1_with_sorted_distance[0][0]))]
+            if top_wrt_distances.shape[0] == 1:
+                best = top_wrt_distances[0]
+            else:
+                # select the one with minimum k neighbors
+                best = top_wrt_distances[np.argsort(
+                    top_wrt_distances[:, 2], kind='stable')][0]
 
         # You need to assign the final values to these variables
         self.best_k = best[2]
@@ -145,7 +163,7 @@ class HyperparameterTuner:
 
     def tuning_with_scaling(self, distance_funcs, scaling_classes, x_train, y_train, x_val, y_val):
         """
-        This part is the same as "tuning_without_scaling", except that you also need to try two different scalers implemented in Part 1.3. More specifically, before passing the training and validation data to KNN model, apply the scalers in scaling_classes to both of them. 
+        This part is the same as "tuning_without_scaling", except that you also need to try two different scalers implemented in Part 1.3. More specifically, before passing the training and validation data to KNN model, apply the scalers in scaling_classes to both of them.
 
         :param distance_funcs: dictionary of distance functions (key is the function name, value is the function) you need to try to calculate the distance. Make sure you loop over all distance functions for each k value.
         :param scaling_classes: dictionary of scalers (key is the scaler name, value is the scaler class) you need to try to normalize your data
@@ -178,7 +196,7 @@ class HyperparameterTuner:
 
             for distance_func_name in distance_funcs.keys():
 
-                for k in range(1, 30):
+                for k in range(1, 30, 2):
                     # create an instance of knn
                     knn = KNN(k, distance_funcs[distance_func_name])
 
@@ -199,25 +217,40 @@ class HyperparameterTuner:
                         knn
                     ]], axis=0)
 
-        # sort the result based on f1 score in non-increasing order
-        results = results[np.argsort(results[:,1], kind='stable')[::-1]]
+         # sort the result based on f1 score in non-increasing order
+        results = results[np.argsort(results[:, 3], kind='stable')[::-1]]
 
-        # sort the results based on scaling class
-        scaling_class_priority = {'min_max_scale': 0, 'normalize': 1}
-        results = results[np.argsort(
-            np.array(scaling_class_priority[df[0]] for df in results), kind='stable')]
+        top_f1_results = results[np.ravel(np.argwhere(
+            results[:, 3] >= results[:, 3].max()))]
 
-        # sort the results based on distance_function
-        distance_funcs_priority = {'euclidean': 0,
-                                   'Minkowski': 1, 'cosine_dist': 2}
-        results = results[np.argsort(
-            np.array(distance_funcs_priority[df[0]] for df in results), kind='stable')]
+        # if there is only one maximum f1 score that is the best
+        if top_f1_results.shape[0] == 1:
+            best = top_f1_results[0]
+        else:
+            # sort the results based on scaling function
+            scaling_funcs_priority = {'min_max_scale': 0, 'normalize': 1}
+            top_f1_with_sorted_scaling = top_f1_results[np.argsort(np.array(
+                [scaling_funcs_priority[df[0]] for df in top_f1_results]), kind='stable')]
 
-        # sort the result based on k neighbors in non-decreasing order
-        results = results[np.argsort(results[:,3], kind='stable')]
+            # if there is only one scaling function that maximizes f1 that is the best
+            if top_f1_with_sorted_scaling.shape[0] == 1:
+                best = top_f1_with_sorted_scaling[0]
+            else:
+                # sort the results based on distance_function
+                distance_funcs_priority = {'euclidean': 0,
+                                           'minkowski': 1, 'cosine_dist': 2}
+                top_wrt_distance = top_f1_with_sorted_scaling[np.argsort(np.array(
+                    [distance_funcs_priority[df[1]] for df in top_f1_with_sorted_scaling]), kind='stable')]
 
-        # the first model is the one with best parameters
-        best = results[0]
+                # if there is only one distance function that maximizes f1 that is the best
+                top_wrt_distances = top_wrt_distance[np.ravel(
+                    np.argwhere(top_wrt_distance[:, 1] == top_wrt_distance[0][1]))]
+                if top_wrt_distances.shape[0] == 1:
+                    best = top_wrt_distances[0]
+                else:
+                    # select the one with minimum k neighbors
+                    best = top_wrt_distances[np.argsort(
+                        top_wrt_distances[:, 2], kind='stable')][0]
 
         # You need to assign the final values to these variables
         self.best_k = best[2]
@@ -254,7 +287,8 @@ class NormalizationScaler:
             Returns:
                 [List[float]]: Normalized feature
             """
-            return features if np.all(features == 0) else features / np.sqrt(np.sum(np.power(features, 2)))
+            ed = np.sqrt(np.sum(np.power(features, 2)))
+            return 0 if ed == 0 else (features / ed)
 
         # scale features and return
         return np.apply_along_axis(scale, 1, arr_features)
@@ -300,4 +334,4 @@ class MinMaxScaler:
             return np.apply_along_axis(scaler, 0, feature)
 
         # apply scaler to all features and return the final features
-        return np.apply_along_axis(scale, 1, arr_features)
+        return np.apply_along_axis(scale, 0, arr_features.T).T

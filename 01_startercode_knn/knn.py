@@ -45,7 +45,7 @@ class KNN:
         distances = self.distance_function(self.features, np_points)
 
         # Sort labels w.r.t distances and return the first k labels
-        return self.labels[distances.argsort()[::-1]][:self.k]
+        return self.labels[distances.argsort()[:self.k]]
 
     def predict(self, features):
         """
