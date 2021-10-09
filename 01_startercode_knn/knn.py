@@ -1,6 +1,8 @@
 import numpy as np
 from collections import Counter
 
+from scipy.spatial import distance
+
 ############################################################################
 # DO NOT MODIFY CODES ABOVE
 ############################################################################
@@ -38,14 +40,11 @@ class KNN:
         :param point: List[float]
         :return:  List[int]
         """
-        # Create a vector of length similar to the features vector
-        np_points = np.repeat([np.array(point)], self.features.shape[0], axis=0)
-
         # Calculate distance
-        distances = self.distance_function(self.features, np_points)
+        distances = np.apply_along_axis(self.distance_function, 1, self.features, point)
 
         # Sort labels w.r.t distances and return the first k labels
-        return self.labels[distances.argsort()[:self.k]]
+        return self.labels[distances.argsort()[:self.k]].astype(int).tolist()
 
     def predict(self, features):
         """

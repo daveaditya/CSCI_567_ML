@@ -7,7 +7,7 @@ def data_processing():
 
     N = data.shape[0]
 
-    np.random.shuffle(data)
+    # np.random.shuffle(data)
     # prepare data
 
     ntr = int(np.round(N * 0.8))

@@ -29,7 +29,7 @@ def f1_score(real_labels, predicted_labels):
         arr_predicted_labels == 0, arr_real_labels == 1))
 
     # Calculate F1 score and return
-    return true_positive / (true_positive + ((false_positive + false_negative) / 2))
+    return float(true_positive / (true_positive + ((false_positive + false_negative) / 2)))
 
 
 class Distances:
@@ -44,7 +44,7 @@ class Distances:
         :param point2: List[float]
         :return: float
         """
-        return np.cbrt(np.sum(np.power(np.absolute(np.array(point1) - np.array(point2)), 3), axis=1))
+        return float(np.cbrt(np.sum(np.power(np.absolute(np.array(point1) - np.array(point2)), 3))))
 
     @staticmethod
     def euclidean_distance(point1, point2):
@@ -53,7 +53,7 @@ class Distances:
         :param point2: List[float]
         :return: float
         """
-        return np.sqrt(np.sum(np.power(np.array(point1) - np.array(point2), 2), axis=1))
+        return float(np.sqrt(np.sum(np.power(np.array(point1) - np.array(point2), 2))))
 
     @staticmethod
     def cosine_similarity_distance(point1, point2):
@@ -64,20 +64,13 @@ class Distances:
        """
         arr_point1 = np.array(point1)
         arr_point2 = np.array(point2)
-        ed_point1 = np.sqrt(np.sum(np.power(arr_point1, 2), axis=1))
-        ed_point2 = np.sqrt(np.sum(np.power(arr_point2, 2), axis=1))
+        ed_point1 = np.sqrt(np.sum(np.power(arr_point1, 2)))
+        ed_point2 = np.sqrt(np.sum(np.power(arr_point2, 2)))
 
-        # create an array to hold result
-        result = np.empty_like(ed_point1)
-
-        # for every point compute the cosine similarity distance
-        for idx in np.arange(ed_point1.shape[0]):
-            if ed_point1[idx] == 0 or ed_point2[idx] == 0:
-                result[idx] = 1
-            else:
-                result[idx] = 1 - (np.dot(arr_point1[idx], arr_point2[idx])/(ed_point1[idx] * ed_point2[idx]))
-
-        return result
+        if ed_point1 == 0 or ed_point2 == 0:
+            return float(1.0)
+        else:
+            return float(1 - (np.dot(arr_point1, arr_point2)/(ed_point1 * ed_point2)))
 
 
 class HyperparameterTuner:
@@ -291,7 +284,7 @@ class NormalizationScaler:
             return 0 if ed == 0 else (features / ed)
 
         # scale features and return
-        return np.apply_along_axis(scale, 1, arr_features)
+        return np.apply_along_axis(scale, 1, arr_features).tolist()
 
 
 class MinMaxScaler:
@@ -334,4 +327,4 @@ class MinMaxScaler:
             return np.apply_along_axis(scaler, 0, feature)
 
         # apply scaler to all features and return the final features
-        return np.apply_along_axis(scale, 0, arr_features.T).T
+        return np.apply_along_axis(scale, 0, arr_features.T).T.tolist()
