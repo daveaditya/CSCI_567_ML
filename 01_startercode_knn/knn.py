@@ -39,13 +39,13 @@ class KNN:
         :return:  List[int]
         """
         # Create a vector of length similar to the features vector
-        np_points = np.repeat(np.array([point]), np.size(self.features)[0])
+        np_points = np.repeat([np.array(point)], self.features.shape[0], axis=0)
 
         # Calculate distance
         distances = self.distance_function(self.features, np_points)
 
         # Sort labels w.r.t distances and return the first k labels
-        return (self.labels[distances.argsort()[::-1]][:self.k]).list()
+        return self.labels[distances.argsort()[::-1]][:self.k]
 
     def predict(self, features):
         """
@@ -57,15 +57,14 @@ class KNN:
         :param features: List[List[float]]
         :return: List[int]
         """
-        # create a vectorized trainer
-        v_trainer = np.vectorize(self.get_k_neighbors)
-
         # finds the majority label
-        v_majority_label = np.vectorize(lambda k_neighbors: Counter(
-            k_neighbors.tolist()).most_common()[0])
+        majority_label = lambda k_neighbors: Counter(k_neighbors).most_common()[0][0]
+
+        # get k neighbors for all data points
+        k_neighbors = np.apply_along_axis(self.get_k_neighbors, 1, features)
 
         # creates a list predicted labels
-        return v_majority_label(v_trainer(features))
+        return np.apply_along_axis(majority_label, 1, k_neighbors)
 
 
 if __name__ == '__main__':

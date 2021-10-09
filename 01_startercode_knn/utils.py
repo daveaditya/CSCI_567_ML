@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.ma.core import logical_and
 from knn import KNN
 
 ############################################################################
@@ -20,12 +21,12 @@ def f1_score(real_labels, predicted_labels):
     arr_predicted_labels = np.array(predicted_labels)
 
     # Get true positive, false positive and false negative
-    true_positive = np.sum(
-        arr_predicted_labels[arr_predicted_labels == 1][arr_real_labels == 1])
-    false_positive = np.sum(
-        arr_predicted_labels[arr_predicted_labels == 1][arr_real_labels == 0])
-    false_negative = np.sum(
-        arr_predicted_labels[arr_predicted_labels == 0][arr_real_labels == 1])
+    true_positive = np.sum(np.logical_and(
+        arr_predicted_labels == 1, arr_real_labels == 1))
+    false_positive = np.sum(np.logical_and(
+        arr_predicted_labels == 1, arr_real_labels == 0))
+    false_negative = np.sum(np.logical_and(
+        arr_predicted_labels == 0, arr_real_labels == 1))
 
     # Calculate F1 score and return
     return true_positive / (true_positive + ((false_positive + false_negative) / 2))
@@ -43,7 +44,7 @@ class Distances:
         :param point2: List[float]
         :return: float
         """
-        return np.cbrt(np.sum(np.power(np.array(point1) - np.array(point2), 3)))
+        return np.cbrt(np.sum(np.power(np.array(point1) - np.array(point2), 3), axis=1))
 
     @staticmethod
     def euclidean_distance(point1, point2):
@@ -52,7 +53,7 @@ class Distances:
         :param point2: List[float]
         :return: float
         """
-        return np.sqrt(np.sum(np.power(np.array(point1) - np.array(point2), 2)))
+        return np.sqrt(np.sum(np.power(np.array(point1) - np.array(point2), 2), axis=1))
 
     @staticmethod
     def cosine_similarity_distance(point1, point2):
@@ -69,7 +70,7 @@ class Distances:
         if ed_point1 == 0 or ed_point2 == 0:
             return 1
         else:
-            return 1 - ((np.dot(arr_point1, arr_point2))/ed_point1 * ed_point2)
+            return 1 - ((np.einsum('ij,ij->i', arr_point1, arr_point2))/(ed_point1 * ed_point2))
 
 
 class HyperparameterTuner:
@@ -100,7 +101,7 @@ class HyperparameterTuner:
         """
 
         # create an empty numpy array
-        results = np.empty((0, np.shape(x_train)[1]))
+        results = np.empty((0, 4))
 
         for distance_func_name in distance_funcs.keys():
 
@@ -115,15 +116,15 @@ class HyperparameterTuner:
                 predictions = knn.predict(x_val)
 
                 # get F1 score
-                f1_score = f1_score(y_val, predictions)
+                score = f1_score(y_val, predictions)
 
                 results = np.append(results, [[distance_func_name,
-                                    f1_score,
+                                    score,
                                     k,
                                     knn]], axis=0)
 
         # sort the result based on f1 score in non-increasing order
-        results = results[np.argsort(results[:1], kind='stable')[::-1]]
+        results = results[np.argsort(results[:,1], kind='stable')[::-1]]
 
         # sort the results based on distance_function
         distance_funcs_priority = {'euclidean': 0,
@@ -132,7 +133,7 @@ class HyperparameterTuner:
             np.array(distance_funcs_priority[df[0]] for df in results), kind='stable')]
 
         # sort the result based on k neighbors in non-decreasing order
-        results = results[np.argsort(results[:3], kind='stable')]
+        results = results[np.argsort(results[:,3], kind='stable')]
 
         # the first model is the one with best parameters
         best = results[0]
@@ -160,7 +161,7 @@ class HyperparameterTuner:
         """
 
         # create an empty numpy array
-        results = np.empty((0, np.shape(x_train)[1]))
+        results = np.empty((0, 5))
 
         for scaling_class in scaling_classes:
 
@@ -188,18 +189,18 @@ class HyperparameterTuner:
                     predictions = knn.predict(scaled_x_val)
 
                     # get F1 score
-                    f1_score = f1_score(y_val, predictions)
+                    score = f1_score(y_val, predictions)
 
                     results = np.append(results, [[
                         scaling_class,
                         distance_func_name,
                         k,
-                        f1_score,
+                        score,
                         knn
                     ]], axis=0)
 
         # sort the result based on f1 score in non-increasing order
-        results = results[np.argsort(results[:1], kind='stable')[::-1]]
+        results = results[np.argsort(results[:,1], kind='stable')[::-1]]
 
         # sort the results based on scaling class
         scaling_class_priority = {'min_max_scale': 0, 'normalize': 1}
@@ -213,7 +214,7 @@ class HyperparameterTuner:
             np.array(distance_funcs_priority[df[0]] for df in results), kind='stable')]
 
         # sort the result based on k neighbors in non-decreasing order
-        results = results[np.argsort(results[:3], kind='stable')]
+        results = results[np.argsort(results[:,3], kind='stable')]
 
         # the first model is the one with best parameters
         best = results[0]
