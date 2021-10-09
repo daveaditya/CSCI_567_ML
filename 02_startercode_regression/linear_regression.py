@@ -17,9 +17,6 @@ def mean_square_error(w, X, y):
     Returns:
     - err: the mean square error
     """
-    #####################################################
-    # TODO 1: Fill in your code here                    #
-    #####################################################
     err =  np.average(np.power(y - np.dot(X, w), 2), axis=0)
     return err
 
@@ -33,9 +30,6 @@ def linear_regression_noreg(X, y):
   Returns:
   - w: a numpy array of shape (D, )
   """
-  #####################################################
-  #	TODO 2: Fill in your code here                    #
-  #####################################################		
   w = np.dot(np.dot(np.linalg.inv(np.dot(X.T, X)), X.T), y)
   return w
 
@@ -51,10 +45,7 @@ def regularized_linear_regression(X, y, lambd):
     Returns:
     - w: a numpy array of shape (D, )
     """
-  #####################################################
-  # TODO 4: Fill in your code here                    #
-  #####################################################		
-    w = None
+    w = np.dot(np.dot(np.linalg.inv(np.dot(X.T, X) + np.dot(lambd, np.identity(X.shape[1]))), X.T), y)
     return w
 
 ###### Part 1.4 ######
@@ -69,14 +60,18 @@ def tune_lambda(Xtrain, ytrain, Xval, yval):
     Returns:
     - bestlambda: the best lambda you find among 2^{-14}, 2^{-13}, ..., 2^{-1}, 1.
     """
-    #####################################################
-    # TODO 5: Fill in your code here                    #
-    #####################################################		
     bestlambda = None
+    bestmse = float('inf')
+    for i in range(-14, 1):
+      w = regularized_linear_regression(Xtrain, ytrain, 2 ** i)
+      mse = mean_square_error(w, Xval, yval)
+      if mse < bestmse:
+        bestlambda = 2 ** i
+        bestmse = mse
     return bestlambda
     
 
-###### Part 1.6 ######
+###### Part 1.5 ######
 def mapping_data(X, p):
     """
     Augment the data to [X, X^2, ..., X^p]
@@ -86,10 +81,9 @@ def mapping_data(X, p):
     Returns:
     - X: The augmented dataset. You might find np.insert useful.
     """
-    #####################################################
-    # TODO 6: Fill in your code here                    #
-    #####################################################		
-    
+    X_temp = X
+    for power in range(2, p + 1):
+        X = np.concatenate((X, np.power(X_temp, power)), axis=1)
     return X
 
 """
