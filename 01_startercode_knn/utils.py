@@ -105,7 +105,7 @@ class HyperparameterTuner:
 
         for distance_func_name in distance_funcs.keys():
 
-            for k in range(1, 30, 2):
+            for k in range(1, min(31, len(x_train) + 1), 2):
                 # create an instance of knn
                 knn = KNN(k, distance_funcs[distance_func_name])
 
@@ -189,7 +189,7 @@ class HyperparameterTuner:
 
             for distance_func_name in distance_funcs.keys():
 
-                for k in range(1, 30, 2):
+                for k in range(1, min(31, len(x_train) + 1), 2):
                     # create an instance of knn
                     knn = KNN(k, distance_funcs[distance_func_name])
 
