@@ -284,7 +284,7 @@ class NormalizationScaler:
             return float(0) if ed == 0 else (features / ed)
 
         # scale features and return
-        return np.apply_along_axis(scale, 1, arr_features).tolist()
+        return np.apply_along_axis(scale, 1, arr_features).astype(float).tolist()
 
 
 class MinMaxScaler:
@@ -317,4 +317,4 @@ class MinMaxScaler:
             return v_scaler(feature)
 
         # apply scaler to all features and return the final features
-        return np.apply_along_axis(scaler, 0, arr_features)
+        return np.apply_along_axis(scaler, 0, arr_features).astype(float).tolist()
