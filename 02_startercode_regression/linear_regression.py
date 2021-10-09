@@ -20,7 +20,7 @@ def mean_square_error(w, X, y):
     #####################################################
     # TODO 1: Fill in your code here                    #
     #####################################################
-    err = None
+    err =  np.average(np.power(y - np.dot(X, w), 2), axis=0)
     return err
 
 ###### Part 1.2 ######
@@ -36,7 +36,7 @@ def linear_regression_noreg(X, y):
   #####################################################
   #	TODO 2: Fill in your code here                    #
   #####################################################		
-  w = None
+  w = np.dot(np.dot(np.linalg.inv(np.dot(X.T, X)), X.T), y)
   return w
 
 
