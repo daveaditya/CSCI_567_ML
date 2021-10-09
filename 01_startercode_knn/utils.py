@@ -281,7 +281,7 @@ class NormalizationScaler:
                 [List[float]]: Normalized feature
             """
             ed = np.sqrt(np.sum(np.power(features, 2)))
-            return 0 if ed == 0 else (features / ed)
+            return float(0) if ed == 0 else (features / ed)
 
         # scale features and return
         return np.apply_along_axis(scale, 1, arr_features).tolist()
@@ -309,22 +309,12 @@ class MinMaxScaler:
         # convert features to numpy array
         arr_features = np.array(features)
 
-        def scale(feature):
-            """Scales the feature based on min-max scaler logic
-
-            Args:
-                feature ([List[float]]): Single feature
-
-            Returns:
-                [List[float]]: Scaled feature
-            """
-            min = np.min(feature)
-            max = np.max(feature)
-            diff = max - min
-
-            def scaler(feature): return 0 if min == max else (
-                feature - min) / (diff)
-            return np.apply_along_axis(scaler, 0, feature)
+        def scaler(feature):
+            maximum = feature.max()
+            minimum = feature.min()
+            diff = maximum - minimum
+            v_scaler = np.vectorize(lambda val: float(0) if diff == 0 else float((val - minimum)/(diff)))
+            return v_scaler(feature)
 
         # apply scaler to all features and return the final features
-        return np.apply_along_axis(scale, 0, arr_features.T).T.tolist()
+        return np.apply_along_axis(scaler, 0, arr_features)
