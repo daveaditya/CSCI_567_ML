@@ -1,3 +1,4 @@
+
 import numpy as np
 from numpy.ma.core import logical_and
 from knn import KNN
@@ -173,6 +174,7 @@ class HyperparameterTuner:
 
         # create an empty numpy array
         results = np.empty((0, 5))
+        temp = list()
 
         for scaling_class in scaling_classes:
 
@@ -210,30 +212,21 @@ class HyperparameterTuner:
                         knn
                     ]], axis=0)
 
-         # sort the result based on f1 score in non-increasing order
-        results = results[np.argsort(results[:, 3], kind='stable')[::-1]]
+            # sort the result based on f1 score in non-increasing order
+            results = results[np.argsort(results[:, 3], kind='stable')[::-1]]
 
-        top_f1_results = results[np.ravel(np.argwhere(
-            results[:, 3] >= results[:, 3].max()))]
+            top_f1_results = results[np.ravel(np.argwhere(
+                results[:, 3] >= results[:, 3].max()))]
 
-        # if there is only one maximum f1 score that is the best
-        if top_f1_results.shape[0] == 1:
-            best = top_f1_results[0]
-        else:
-            # sort the results based on scaling function
-            scaling_funcs_priority = {'min_max_scale': 0, 'normalize': 1}
-            top_f1_with_sorted_scaling = top_f1_results[np.argsort(np.array(
-                [scaling_funcs_priority[df[0]] for df in top_f1_results]), kind='stable')]
-
-            # if there is only one scaling function that maximizes f1 that is the best
-            if top_f1_with_sorted_scaling.shape[0] == 1:
-                best = top_f1_with_sorted_scaling[0]
+            # if there is only one maximum f1 score that is the best
+            if top_f1_results.shape[0] == 1:
+                best = top_f1_results[0]
             else:
                 # sort the results based on distance_function
                 distance_funcs_priority = {'euclidean': 0,
                                            'minkowski': 1, 'cosine_dist': 2}
-                top_wrt_distance = top_f1_with_sorted_scaling[np.argsort(np.array(
-                    [distance_funcs_priority[df[1]] for df in top_f1_with_sorted_scaling]), kind='stable')]
+                top_wrt_distance = top_f1_results[np.argsort(np.array(
+                    [distance_funcs_priority[df[1]] for df in top_f1_results]), kind='stable')]
 
                 # if there is only one distance function that maximizes f1 that is the best
                 top_wrt_distances = top_wrt_distance[np.ravel(
@@ -244,12 +237,20 @@ class HyperparameterTuner:
                     # select the one with minimum k neighbors
                     best = top_wrt_distances[np.argsort(
                         top_wrt_distances[:, 2], kind='stable')][0]
+            
+            temp.append(best)
+            
+        final_best = None
+        if temp[1][3] > temp[0][3]:
+            final_best = temp[1]
+        else:
+            final_best = temp[0]
 
         # You need to assign the final values to these variables
-        self.best_k = best[2]
-        self.best_distance_function = best[1]
-        self.best_scaler = best[0]
-        self.best_model = best[4]
+        self.best_k = final_best[2]
+        self.best_distance_function = final_best[1]
+        self.best_scaler = final_best[0]
+        self.best_model = final_best[4]
 
 
 class NormalizationScaler:
@@ -281,7 +282,7 @@ class NormalizationScaler:
                 [List[float]]: Normalized feature
             """
             ed = np.sqrt(np.sum(np.power(features, 2)))
-            return float(0) if ed == 0 else (features / ed)
+            return features if ed == 0 else (features / ed)
 
         # scale features and return
         return np.apply_along_axis(scale, 1, arr_features).astype(float).tolist()
@@ -312,8 +313,8 @@ class MinMaxScaler:
         def scaler(feature):
             maximum = feature.max()
             minimum = feature.min()
-            diff = maximum - minimum
-            v_scaler = np.vectorize(lambda val: float(0) if diff == 0 else float((val - minimum)/(diff)))
+            diff = float(maximum - minimum)
+            v_scaler = np.vectorize(lambda val: float(0) if diff == float(0) else float((val - minimum)/diff))
             return v_scaler(feature)
 
         # apply scaler to all features and return the final features
