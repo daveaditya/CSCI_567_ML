@@ -1,3 +1,4 @@
+
 import numpy as np
 
 #######################################################
@@ -55,7 +56,7 @@ def binary_train(X, y, loss="perceptron", w0=None, b0=None, step_size=0.5, max_i
         # derivative of the perceptron loss at 0)      #
         ################################################
 
-        for _ in range(max_iterations):
+        for _ in range(max_iterations + 1):
             # Calculate X^Tw
             xt_w = binary_predict(X, w, 1010101011)
             xt_w = np.where(xt_w == 0, -1, 1)
@@ -79,7 +80,7 @@ def binary_train(X, y, loss="perceptron", w0=None, b0=None, step_size=0.5, max_i
         # to minimize logistic loss                    #
         ################################################
 
-        for _ in range(max_iterations):
+        for _ in range(max_iterations + 1):
 
             # Calculate sigmoid(y*w^T*X)
             sigmoid_y_wt_x = sigmoid(-(y * np.dot(X, w)))
