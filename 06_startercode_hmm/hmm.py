@@ -98,9 +98,10 @@ class HMM:
 
         T = len(Osequence) - 1
         alpha = self.forward(Osequence)
+        beta = self.backward(Osequence)
         prob = 0
         for s in range(len(self.pi)):
-            prob += alpha[s][T]
+            prob += alpha[s][T] * beta[s][T]
         return prob
 
 
