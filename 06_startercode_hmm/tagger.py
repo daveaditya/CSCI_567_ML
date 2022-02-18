@@ -1,5 +1,6 @@
 import numpy as np
 from hmm import HMM
+from collections import defaultdict
 
 def model_training(train_data, tags):
     """
@@ -28,7 +29,14 @@ def model_training(train_data, tags):
     # The order you index the word/tag does not matter, 
     # as long as the indices are 0, 1, 2, ...
     ###################################################
-    
+
+    index = 0
+    for word in unique_words:
+        if word not in word2idx.keys():
+            word2idx[word] = index
+            index = index + 1
+    for i in range(S):
+        tag2idx[tags[i]] = i
 
 
     pi = np.zeros(S)
@@ -41,6 +49,30 @@ def model_training(train_data, tags):
     #   to be zero.
     ###################################################
     
+    first_tags_count = defaultdict(int)
+    tags_count = defaultdict(int)
+    total_transitions_dict = defaultdict(int)
+    pos_to_word = defaultdict(lambda: defaultdict(int))
+    tag_transition_count = defaultdict(lambda: defaultdict(int))
+
+    for sentence in train_data:
+        last_tag = ""
+        first_tags_count[sentence.tags[0]] = first_tags_count[sentence.tags[0]] + 1
+        for i, word in enumerate(sentence.words):
+            current_tag = sentence.tags[i]
+            tags_count[current_tag] += 1
+            total_transitions_dict[last_tag] += 1
+            pos_to_word[current_tag][word] += 1
+            tag_transition_count[last_tag][current_tag] += 1
+            last_tag = current_tag
+
+    for tag in tags:
+        tag_index = tag2idx[tag]
+        pi[tag_index] = first_tags_count[tag] / len(train_data)
+        for word, count in pos_to_word[tag].items():
+            B[tag_index][word2idx[word]] = count / tags_count[tag]
+        for next_tag in tags:
+            A[tag_index][tag2idx[next_tag]] = tag_transition_count[tag][next_tag] / total_transitions_dict[tag]
 
     # DO NOT MODIFY BELOW
     model = HMM(pi, A, B, word2idx, tag2idx)
@@ -64,6 +96,17 @@ def sentence_tagging(test_data, model, tags):
     #    you need to add this word to model.obs_dict, and expand model.B
     #    accordingly with value 1e-6.
     ######################################################################
+
+    S = len(tags)
+    next_index = max(model.obs_dict.values()) + 1
+    z = np.full((S, 1), 10 ** -6)
+    for sentence in test_data:
+        for word in sentence.words:
+            if word not in model.obs_dict.keys():
+                model.obs_dict[word] = next_index
+                model.B = np.append(model.B, z, axis=1)
+                next_index += 1
+        tagging.append(model.viterbi(sentence.words))
 
     return tagging
 
