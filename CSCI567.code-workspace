@@ -27,7 +27,16 @@
         "cwd": "${workspaceFolder}/02_startercode_regression"
       },
       {
-        "name": "Linear Classifier",
+        "name": "Linear Classifier (BM)",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/03_startercode_linear_classifier/classification.py",
+        "args": ["--type", "binary", "--output", "binary.out"],
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}/03_startercode_linear_classifier"
+      },
+      {
+        "name": "Linear Classifier (Multi)",
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/03_startercode_linear_classifier/classification.py",
